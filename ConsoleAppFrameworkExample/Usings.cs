@@ -8,7 +8,3 @@ global using Microsoft.Extensions.Configuration;
 global using ConsoleAppFramework;
 
 global using ZLogger;
-
-global using Quartz;
-global using Quartz.Impl;
-global using Quartz.Spi;

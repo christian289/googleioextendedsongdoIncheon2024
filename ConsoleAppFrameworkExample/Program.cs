@@ -1,5 +1,5 @@
-﻿using ConsoleAppFrameworkExample.Options;
-using ConsoleAppFrameworkExample.Quartz;
+﻿using ConsoleAppFrameworkExample;
+using ConsoleAppFrameworkExample.Options;
 
 // CreateApplicationBuilder와 CreateDefaultBuilder 중 더 최신 트렌드는 CreateApplicationBuilder 입니다.
 // 단순하게 Host Application을 정의하는 코드 형태의 차이만 존재하지만,
@@ -8,34 +8,19 @@ using ConsoleAppFrameworkExample.Quartz;
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
 #region .NET Generic Host Configuration
-builder.Environment.ContentRootPath = AppDomain.CurrentDomain.BaseDirectory;
+builder.Configuration.Sources.Clear();
+builder.Configuration.SetBasePath(AppDomain.CurrentDomain.BaseDirectory);
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
-builder.Configuration.AddCommandLine(args);
+//builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true); // Console App 환경은 ASP.NET Core와 다르게 환경별 설정 파일을 사용하지 않는다.
+//builder.Configuration.AddCommandLine(args); // .NET 기본 CommandLine Parameter 방식 사용할 때 추가.
 #endregion
 
 #region .NET Option Pattern
-SampleOption options = new();
-var section = builder.Configuration.GetSection(nameof(SampleOption));
-section.Bind(options);
-
+var options = builder.Configuration.GetSection(nameof(SampleOption)).Get<SampleOption>()!;
 Console.WriteLine("옵션 값 제대로 바인딩 되었는지 체크할 때 사용!!");
 Console.WriteLine($"Name: {options.Name}");
 Console.WriteLine($"Age: {options.Age}");
 Console.WriteLine($"Description: {options.Description}");
-
-builder.Services.Configure<SampleOption>(section);
-#endregion
-
-#region Quartz.NET Boilerplate Configuration
-builder.Services.AddSingleton<IJobFactory, SingletonJobFactory>();
-builder.Services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
-builder.Services.AddSingleton<PrintJob>();
-builder.Services.AddSingleton(new JobSchedule(
-    jobType: typeof(PrintJob),
-    cronExpression: "0/5 * * * * ?")); // cron 식, 5초마다 실행
-
-builder.Services.AddHostedService<QuartzHostedService>();
 #endregion
 
 #region CySharp ZLogger Configuration
@@ -46,6 +31,11 @@ builder.Services.AddLogging(x =>
     //x.AddConsole(); // Micsosoft.Extensions.Logging
     x.AddZLoggerConsole(); // ZLogger
 });
+#endregion
+
+#region Regist Services
+//https://learn.microsoft.com/ko-kr/aspnet/core/fundamentals/host/hosted-services?view=aspnetcore-8.0&tabs=visual-studio
+builder.Services.AddHostedService<SampleHostedService>();
 #endregion
 
 // Build
@@ -60,5 +50,9 @@ using IHost host = builder.Build();
 // 이것을 사용할 경우 ConsoleAppFramework로 동작
 using var scope = host.Services.CreateScope();
 ConsoleApp.ServiceProvider = scope.ServiceProvider;
-ConsoleApp.Run(args, ([FromServices] ILogger<Program> logger) => logger.LogInformation("Hello World!"));
+await ConsoleApp.RunAsync(args, async (int foo, int bar, CancellationToken token) =>
+{
+    await Task.Delay(Timeout.InfiniteTimeSpan, token);
+    Console.WriteLine("끝났다!");
+});
 #endregion
