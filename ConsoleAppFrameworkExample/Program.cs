@@ -50,9 +50,5 @@ using IHost host = builder.Build();
 // 이것을 사용할 경우 ConsoleAppFramework로 동작
 using var scope = host.Services.CreateScope();
 ConsoleApp.ServiceProvider = scope.ServiceProvider;
-await ConsoleApp.RunAsync(args, async (int foo, int bar, CancellationToken token) =>
-{
-    await Task.Delay(Timeout.InfiniteTimeSpan, token);
-    Console.WriteLine("끝났다!");
-});
+ConsoleApp.Run(args, ([FromServices] ILogger<Program> logger) => logger.LogInformation("Hello World!"));
 #endregion

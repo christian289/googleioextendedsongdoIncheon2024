@@ -1,5 +1,7 @@
 ﻿namespace ConsoleAppFrameworkExample;
 
+// 이 서비스는 Generic Host에서 실행되는 Hosted Service로서, 주기적인 작업을 수행합니다.
+// ConsoleAppFramework는 자체적인 lifetime을 가지고 있기 때문에, Hosted Service를 사용할 수 없습니다.
 internal class SampleHostedService(ILogger<SampleHostedService> logger) : IHostedService
 {
     private readonly ILogger<SampleHostedService> logger = logger;
